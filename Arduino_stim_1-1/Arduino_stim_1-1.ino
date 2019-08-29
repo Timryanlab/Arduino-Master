@@ -6,24 +6,28 @@
 // It operates by reading the rising edge of camera frame. When the camera frame is high,
 // the digital signal for lasers goes high, then turn off with the camera fire line. The 
 // Stimulator turns on for a specified frame.
+/
+// AN 8-29-2019 Tim Ryan Lab
 //
-// User commands
+// User commands while running
 // 'r' reset counting
 // 's#' set frame # to new stimulation value
 // 'S' stimulate immediately
-// USer Variables
-int in = 2;
-int out = 3;
-int ins[] = {13, 12}; // {Camera, Ext. Shut}
-int outs[] = {5, 4, 3, 2, 6}; // {Stimulate, Laser1, Laser2, ...}
 
-// Initialization
+// USer Variables
+int in = 2; // Specify number of inputs used
+int out = 3; //Specify number of outputs used
+int ins[] = {13, 12}; // {Camera, Ext. Shut}
+int outs[] = {5, 4, 3}; // {Stimulate, Laser1, Laser2, ...}
+
+// Initialization of user independent variables.
 unsigned int count = 0;
 bool cam0 = LOW;
 bool cam = LOW;
 int stim = 10;
+
 void setup() {
-  // put your setup code here, to run once:
+  
   for (int i =0; i< in; i++){
     pinMode(ins[i],INPUT);  // activate inputs
   }
