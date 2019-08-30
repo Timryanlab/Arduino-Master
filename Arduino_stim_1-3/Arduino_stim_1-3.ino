@@ -11,7 +11,10 @@
 // User commands while running
 // 'r' reset counting
 // 's#' set frame # to new stimulation value
-// 'S' stimulate immediately
+// 'S' stimulate train immediately
+// 'f#' set frequency of train
+// 'N#' set number of stimulations / train
+// 'p'
 //
 // Change_log
 // 1.3 Added function generator support AJN 9-29-19
@@ -167,6 +170,13 @@ void loop() {
         Serial.print("Pulse width is now "); // Confirm Input
         Serial.print(pwidth); // Repeat input for confirmation
         Serial.print("ms\n"); // newline
+      case 112:
+        p = Serial.parseInt(); // parse integer into perdiod in ms
+        f = 1000/p;
+        Serial.print("Pulse width is now "); // Confirm Input
+        Serial.print(p); // Repeat input for confirmation
+        Serial.print("ms\n"); // newline
+        break;
       default: // occurs when we encounter and 'unexpected' case
         Serial.print("instructions unclear you gave "); // Indicates no handling of this case
         Serial.print(cmd); // prints out decimal number for future coding
