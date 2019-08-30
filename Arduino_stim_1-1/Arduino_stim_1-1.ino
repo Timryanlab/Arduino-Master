@@ -52,9 +52,7 @@ void loop() {
     switch(cam){ // Switch between high and low states
       case HIGH: // Indicates Frame is being read
         if(digitalRead(ins[1]) == HIGH || in == 1){ // If either 1 input or the external shutter is open
-          for(int i=1; i < out; i++){ // Loop over laser outputs
-            digitalWrite(outs[i],HIGH); // write outputs to high
-          }
+
         }
         count++; // increment counting variable
         if(count == stim){ // If frame number equals stimulation number
@@ -100,4 +98,3 @@ void loop() {
     }
   } // end serial loop
 } // end main loop
-
