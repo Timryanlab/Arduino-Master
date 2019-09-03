@@ -173,7 +173,7 @@ void loop() {
       case 112:
         p = Serial.parseInt(); // parse integer into perdiod in ms
         f = 1000/p;
-        Serial.print("Pulse width is now "); // Confirm Input
+        Serial.print("Period is now "); // Confirm Input
         Serial.print(p); // Repeat input for confirmation
         Serial.print("ms\n"); // newline
         break;
@@ -197,4 +197,3 @@ void train(){  // run a stimulation train at known intervals
     delay(p); // delay by period and repeat
   }
 }
-
