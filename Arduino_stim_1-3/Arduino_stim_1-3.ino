@@ -21,13 +21,13 @@
 // 1.2 Added switcher support as a switch statement AJN 9-29-19
 
 // USer Variables
-int in = 2; // Specify number of inputs used
-int out = 3; //Specify number of outputs used
+int in = 1; // Specify number of inputs used
+int out = 4; //Specify number of outputs used
 int ins[] = {13, 12}; // {Camera, Ext. Shut}
-int outs[] = {5, 4, 3}; // {Stimulate, Laser1, Laser2, ...}
+int outs[] = {7, 2, 3, 4}; // {Stimulate, Laser1, Laser2, ...}
 int f = 1; // initial frequency of Stimulation in Hz
 int N = 10; // Number of stimuli
-unsigned long pwidth = 1; // pulse width in milliseconds
+long pwidth = 1; // pulse width in milliseconds
 
 // Initialization of user independent variables.
 unsigned int count = 0; // Initialize Frame number (no negative frames)
@@ -71,6 +71,7 @@ void loop() {
   int cmd = 0; // Command variable for updating arduino state through USB
   cam = digitalRead(ins[0]); // Read camera state for this frame
   if(cam0 != cam) { // If camera state has changed execute following
+    cmd = count + 5;
     switch(cam){ // Switch between high and low states
       case HIGH: // Indicates Frame is being read
         if(digitalRead(ins[1]) == HIGH || in == 1){ // If either 1 input or the external shutter is open
@@ -197,4 +198,3 @@ void train(){  // run a stimulation train at known intervals
     delay(p); // delay by period and repeat
   }
 }
-
