@@ -24,10 +24,10 @@
 // USer Variables
 int in = 1; // Specify number of inputs used
 int out = 4; //Specify number of outputs used
-int ins[] = {13, 12}; // {Camera, Ext. Shut}
+int ins[] = {13}; // {Camera, Ext. Shut}
 int outs[] = {7, 2, 3, 4}; // {Stimulate, Laser1, Laser2, ...}
-int f = 1; // initial frequency of Stimulation in Hz
-int N = 10; // Number of stimuli
+int f = 20; // initial frequency of Stimulation in Hz
+int N = 20; // Number of stimuli
 long pwidth = 1; // pulse width in milliseconds
 
 // Initialization of user independent variables.
@@ -70,7 +70,6 @@ void loop() {
   int cmd = 0; // Command variable for updating arduino state through USB
   cam = digitalRead(ins[0]); // Read camera state for this frame
   if(cam0 != cam) { // If camera state has changed execute following
-    cmd = count + 5;
     switch(cam){ // Switch between high and low states
       case HIGH: // Indicates Frame is being read
         if(digitalRead(ins[1]) == HIGH || in == 1){ // If either 1 input or the external shutter is open
@@ -90,12 +89,12 @@ void loop() {
             }//end switch las_stat for switcher
           } // end switch laser state
         
-        count++; // increment counting variable
-        if(count == stim){
-          if(arm == 1){flag = 1;}
+          count++; // increment counting variable
+          if(count == stim){
+            if(arm == 1){flag = 1;}
           }
-        Serial.print(count); // print camera frame
-        Serial.print("\n"); // newline character
+          Serial.print(count); // print camera frame
+          Serial.print("\n"); // newline character
         }
         break; // Don't execute any more of the switch loop
     
@@ -167,7 +166,7 @@ void loop() {
         break;
       case 78: // if incoming bit is 'N' change number of stimuli
         N =Serial.parseInt(); // Parse incoming integer into N
-        Serial.print("Number of stimuli is not "); // Confirm Input
+        Serial.print("Number of stimuli is now "); // Confirm Input
         Serial.print(N); // Repeat input for confirmation
         Serial.print("\n"); // newline
         break;
