@@ -21,7 +21,7 @@
 // 1.2 Added switcher support as a switch statement AJN 9-29-19
 
 // USer Variables
-int in = 2; // Specify number of inputs used
+int in = 1; // Specify number of inputs used
 int out = 3; //Specify number of outputs used
 int ins[] = {13, 12}; // {Camera, Ext. Shut}
 int outs[] = {5, 4, 3}; // {Stimulate, Laser1, Laser2, ...}
@@ -66,11 +66,13 @@ void setup() {
 }
 
 void loop() {
-
+  
   unsigned long nowt = millis();
   int cmd = 0; // Command variable for updating arduino state through USB
   cam = digitalRead(ins[0]); // Read camera state for this frame
   if(cam0 != cam) { // If camera state has changed execute following
+    //Serial.print(cam);
+    //Serial.print("\n");
     switch(cam){ // Switch between high and low states
       case HIGH: // Indicates Frame is being read
         if(digitalRead(ins[1]) == HIGH || in == 1){ // If either 1 input or the external shutter is open
@@ -100,6 +102,7 @@ void loop() {
         break; // Don't execute any more of the switch loop
     
       case  LOW:  // Indicates the frame has finished aquistion
+
         for(int i=1; i < out; i++){ // turn off lasers
           digitalWrite(outs[i],LOW); // write pin low
         } // all other work is taken care of on the rising edge. However if there is a use for the falling edge it would go here
@@ -107,7 +110,6 @@ void loop() {
     }
   } // end state change section
   cam0 = cam; // update previous state to current state
-
   // Stimulation Section
   if(flag == 1){ // if stimulation flag is high, look for stimulation behavior
     if(n == 0){ // if no stimuli have been given
@@ -161,7 +163,7 @@ void loop() {
         break;
       case 78: // if incoming bit is 'N' change number of stimuli
         N =Serial.parseInt(); // Parse incoming integer into N
-        Serial.print("Number of stimuli is not "); // Confirm Input
+        Serial.print("Number of stimuli is now "); // Confirm Input
         Serial.print(N); // Repeat input for confirmation
         Serial.print("\n"); // newline
         break;
@@ -171,7 +173,7 @@ void loop() {
         Serial.print(pwidth); // Repeat input for confirmation
         Serial.print("ms\n"); // newline
       case 112:
-        p = Serial.parseInt(); // parse integer into perdiod in ms
+        p = Serial.parseInt(); // if incoming bit is 'p' parse integer into perdiod in ms
         f = 1000/p;
         Serial.print("Period is now "); // Confirm Input
         Serial.print(p); // Repeat input for confirmation
