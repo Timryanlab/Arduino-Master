@@ -1,5 +1,4 @@
-// Arduino Stim v 1.3
-//
+// Arduino Stim v 2.2
 // This is an arduino sketch attempting to handle the electrical communication between
 // an EMCCD, Isolator Battery, Coherent Laser box, in a controlled and programable fashion. 
 // This version is a working version that will drive up to a number of digital outputs.
@@ -17,23 +16,28 @@
 // 'p'
 //
 // Change_log
+// 2.2 the Bear's 2 camera arduino sketch
 // 2.1 Fully functional arduino program, incorporating arming protocol and streamlining communication
 // 1.3 Added function generator support AJN 9-29-19
 // 1.2 Added switcher support as a switch statement AJN 9-29-19
 
 // USer Variables
 int in = 1; // Specify number of inputs used
-int out = 4; //Specify number of outputs used
-int ins[] = {13, 12}; // {Camera, Ext. Shut}
+int out = 5; //Specify number of outputs used
+int ins[] = {13, 12}; // {Camera1, Camera2}
 int outs[] = {7, 2, 3, 4}; // {Stimulate, Laser1, Laser2, ...}
-int f = 1; // initial frequency of Stimulation in Hz
-int N = 10; // Number of stimuli
+int ext_trig = 5; // For triggering the cameras in
+int f = 20; // initial frequency of Stimulation in Hz
+int N = 20; // Number of stimuli
 long pwidth = 1; // pulse width in milliseconds
 
 // Initialization of user independent variables.
 unsigned int count = 0; // Initialize Frame number (no negative frames)
 bool cam0 = LOW; // Initialize 'previous' camera state as low
 bool cam = LOW; // Initialize 'current' state as high
+bool cam20 = low; // repeat for second camera
+bool cam2 = low;
+
 int arm = 0;
 int stim = 10;  // Initialize no stimulation unless asked for it (setting to -1 prevents stimulation)
 int laser_state = 0; // laser state to induce switching
@@ -54,7 +58,8 @@ void setup() {
     pinMode(outs[i],OUTPUT);
     digitalWrite(outs[i], LOW); // initialize outputs to low
   }
-
+  pinMode(ext_trig,OUTPUT);
+  digitalWrite(ext_trig,LOW);
   // This section is for USB communication early on and will be streamlined after debugging 8-29-19
   Serial.begin(9600);
   Serial.setTimeout(100); // we won't be communicating that much, 100 ms should be fine
@@ -82,7 +87,7 @@ void loop() {
           case 1: //switcher between laser1 and laser2
             switch(count%2){
               case 0:
-                digitalWrite(outs[3],HIGH);
+                digitalWrite(outs[2],HIGH);
                 break;
               case 1:
                 digitalWrite(outs[1],HIGH);
