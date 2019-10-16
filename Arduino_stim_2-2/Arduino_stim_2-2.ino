@@ -25,8 +25,9 @@
 // USer Variables
 int in = 1; // Specify number of inputs used
 int out = 4; //Specify number of outputs used
-int ins[] = {13}; // {Camera, Ext. Shut}
+int ins[] = {13, 12}; // {Camera, Ext. Shut}
 int outs[] = {7, 2, 3, 4}; // {Stimulate, Laser1, Laser2, ...}
+int ext_trig = 5;
 int f = 20; // initial frequency of Stimulation in Hz
 int N = 20; // Number of stimuli
 long pwidth = 1; // pulse width in milliseconds
@@ -38,10 +39,14 @@ bool cam = LOW; // Initialize 'current' state as high
 bool cam20 = LOW; // Initialize 'previous' camera state as low
 bool cam2 = LOW; // Initialize 'current' state as high
 bool invert = LOW;
+bool simul = LOW;
+bool ext_go = LOW;
 int arm = 0;
 int stim = 10;  // Initialize no stimulation unless asked for it (setting to -1 prevents stimulation)
 int laser_state = 0; // laser state to induce switching
 long lastmil = 0; // Storage variable for previous time
+long lastcam = 0;
+int cam_p = 100; // initialization of camera period
 
 unsigned long p = 1000/f; // Period between stimuli in ms
 int flag = 0; // flag for timing
@@ -58,7 +63,9 @@ void setup() {
     pinMode(outs[i],OUTPUT);
     digitalWrite(outs[i], LOW); // initialize outputs to low
   }
-
+  pinMode(ext_trig,OUTPUT);
+  digitalWrite(ext_trig,LOW);
+  pinMode(12,INPUT);
   // This section is for USB communication early on and will be streamlined after debugging 8-29-19
   Serial.begin(9600);
   Serial.setTimeout(100); // we won't be communicating that much, 100 ms should be fine
@@ -71,13 +78,22 @@ void setup() {
 void loop() {
 
   unsigned long nowt = millis();
+  if(nowt-lastcam >= cam_p && ext_go){take_frame();} // external camera synchronization pulse
+  
   int cmd = 0; // Command variable for updating arduino state through USB
+  
   cam = digitalRead(ins[0]); // Read camera state for this frame
-  if(invert == HIGH){cam = !cam;} // invert camera signal if invert is high
+  cam2 = digitalRead(12);
+  
+  if(invert == HIGH){
+    cam = !cam;
+    cam2 = !cam2;
+    } // invert camera signal if invert is high
+  
   if(cam0 != cam) { // If camera state has changed execute following
     switch(cam){ // Switch between high and low states
       case HIGH: // Indicates Frame is being read
-        if(digitalRead(ins[1]) == HIGH || in == 1){ // If either 1 input or the external shutter is open
+       // if(digitalRead(ins[1]) == HIGH || in == 1){ // If either 1 input or the external shutter is open
           switch(laser_state){
           case 0: // all on or off
             for(int i=1; i < out; i++){ // Loop over laser outputs
@@ -87,7 +103,7 @@ void loop() {
           case 1: //switcher between laser1 and laser2
             switch(count%2){
               case 0:
-                digitalWrite(outs[3],HIGH);
+                digitalWrite(outs[2],HIGH);
                 break;
               case 1:
                 digitalWrite(outs[1],HIGH);
@@ -95,7 +111,8 @@ void loop() {
             }//end switch las_stat for switcher
             break;
           case 2: // if laser state is set to 2, we have each camera controlling it's own laser
-            digitalWrite(outs[1],HIGH);
+            digitalWrite(outs[3],HIGH);
+            break;
           } // end switch laser state
         
           count++; // increment counting variable
@@ -104,13 +121,14 @@ void loop() {
           }
           Serial.print(count); // print camera frame
           Serial.print("\n"); // newline character
-        }
+       // }
         break; // Don't execute any more of the switch loop
     
       case  LOW:  // Indicates the frame has finished aquistion
         switch(laser_state){
           case 2: // turn off only camera's lasers
-            digitalWrite(outs[1],LOW); // write pin low
+            digitalWrite(outs[3],LOW); // write pin low
+            digitalWrite(outs[2],LOW);
             break;
           default: // default should be all lasers off at the end of the frame
             for(int i=1; i < out; i++){ // turn off lasers
@@ -121,21 +139,27 @@ void loop() {
     }
   } // end state change section
   cam0 = cam; // update previous state to current state
-  if(invert == HIGH){
+  if(simul == HIGH){
     // Second Camera Control
-    cam2 = digitalRead(ins[1]);
+    Serial.print(cam2);
+    Serial.print('\n');
+
     if(cam20 != cam2) { // If camera state has changed execute following
       switch(cam2){ // Switch between high and low states
         case HIGH: // Indicates Frame is being read
-          digitalWrite(outs[2],HIGH);
+          digitalWrite(outs[1],HIGH);
+              
           break;
         case LOW:
-          digitalWrite(outs[2],LOW);
+          digitalWrite(outs[1],LOW);
+          
           break;
       }
     }
-    cam20 = cam2;
+    
   }
+  cam20 = cam2;
+  
   // Stimulation Section
   if(flag == 1){ // if stimulation flag is high, look for stimulation behavior
     if(n == 0){ // if no stimuli have been given
@@ -201,10 +225,24 @@ void loop() {
         break;
       case 105: // if incoming bit is 'i' toggle inverter
         invert = !invert;
-        if(laser_state == 2){laser_state = 0;}
-        else{laser_state = 2;}
         Serial.print("Invert is set to "); // Confirm Input
         Serial.print(invert); // Repeat input for confirmation
+        Serial.print("\n"); // newline
+        break;
+      case 101: // if incoming bit is 'e' toggle external triggering
+        ext_go = !ext_go;
+
+        lastcam = nowt;
+        Serial.print("Ext go is set to "); // Confirm Input
+        Serial.print(ext_go); // Repeat input for confirmation
+        Serial.print("\n"); // newline
+        break;
+      case 107: // if k is in toggle simultaneous 
+        simul = !simul;
+        if(laser_state == 2){laser_state = 0;}
+        else{laser_state = 2;}
+        Serial.print("Simultaneous is set to "); // Confirm Input
+        Serial.print(simul); // Repeat input for confirmation
         Serial.print("\n"); // newline
         break;
       default: // occurs when we encounter and 'unexpected' case
@@ -219,6 +257,12 @@ void stimulate(){ // stimulate function
   digitalWrite(outs[0],HIGH);  // write pin high
   delay(pwidth);              // wait pulse width time
   digitalWrite(outs[0],LOW);  // write pin low
+}
+
+void take_frame(){ // stimulate function
+  digitalWrite(ext_trig,HIGH);  // write pin high
+  delay(pwidth);              // wait pulse width time
+  digitalWrite(ext_trig,LOW);  // write pin low
 }
 
 void train(){  // run a stimulation train at known intervals
