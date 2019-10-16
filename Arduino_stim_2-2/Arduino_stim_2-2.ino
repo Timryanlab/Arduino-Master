@@ -46,7 +46,7 @@ int stim = 10;  // Initialize no stimulation unless asked for it (setting to -1 
 int laser_state = 0; // laser state to induce switching
 long lastmil = 0; // Storage variable for previous time
 long lastcam = 0;
-int cam_p = 100; // initialization of camera period
+long cam_p = 100; // initialization of camera period
 
 unsigned long p = 1000/f; // Period between stimuli in ms
 int flag = 0; // flag for timing
@@ -65,7 +65,7 @@ void setup() {
   }
   pinMode(ext_trig,OUTPUT);
   digitalWrite(ext_trig,LOW);
-  pinMode(12,INPUT);
+  pinMode(ins[1],INPUT);
   // This section is for USB communication early on and will be streamlined after debugging 8-29-19
   Serial.begin(9600);
   Serial.setTimeout(100); // we won't be communicating that much, 100 ms should be fine
@@ -78,12 +78,15 @@ void setup() {
 void loop() {
 
   unsigned long nowt = millis();
-  if(nowt-lastcam >= cam_p && ext_go){take_frame();} // external camera synchronization pulse
+  if(nowt-lastcam >= cam_p && ext_go){
+    take_frame();
+    lastcam = nowt;
+    } // external camera synchronization pulse
   
   int cmd = 0; // Command variable for updating arduino state through USB
   
   cam = digitalRead(ins[0]); // Read camera state for this frame
-  cam2 = digitalRead(12);
+  cam2 = digitalRead(ins[1]);
   
   if(invert == HIGH){
     cam = !cam;
@@ -139,16 +142,11 @@ void loop() {
     }
   } // end state change section
   cam0 = cam; // update previous state to current state
-  if(simul == HIGH){
-    // Second Camera Control
-    Serial.print(cam2);
-    Serial.print('\n');
-
+  if(simul == HIGH){ // if simul is high we want 2 cameras each controlling their own laser
     if(cam20 != cam2) { // If camera state has changed execute following
       switch(cam2){ // Switch between high and low states
         case HIGH: // Indicates Frame is being read
-          digitalWrite(outs[1],HIGH);
-              
+          digitalWrite(outs[1],HIGH);   
           break;
         case LOW:
           digitalWrite(outs[1],LOW);
@@ -185,6 +183,67 @@ void loop() {
     cmd = Serial.read(); // Read the 1 byte input
     Serial.print("Confirmed "); // Respond to USB
     switch(cmd){ // switch statement allows for building of a variety of command interfaces
+      
+      case 78: // if incoming bit is 'N' change number of stimuli                               // variables and commands used
+        N =Serial.parseInt(); // Parse incoming integer into N                                  // 78: N: changes number of stimuli
+        Serial.print("Number of stimuli is now "); // Confirm Input                             // 83: S: causes immediate execution of stimulation train
+        Serial.print(N); // Repeat input for confirmation                                       // 97: a: changes which frame stimulation will occur on
+        Serial.print("\n"); // newline                                                          // 99: c#: changes the time between camera frames for external trigger
+        break;                                                                                  // 101: e: toggle external triggering
+                                                                                                // 102: f#:  sets frequency of stimulation train 
+      case 83: // If the incoming bit is 'S' then stimulate now                                 // 105: i: toggle inverter
+        train(); // Run a train of stimuli at p intervals                                       // 107: k: toggle simultaneous camera acquisition
+        Serial.print("STIM!\n"); // communicate sitmulation                                     // 114: r: reset frame number
+        break;                                                                                  // 115: s: force train of stimulation 
+                                                                                                // 119: w: toggle switcher
+      case 97: // If incoming byte is 'a' then arm stimulation                                  //
+        arm = (arm +1) % 2;                                                                     //
+        Serial.print("Arm is now "); // Confirm input                                           //
+        Serial.print(arm); // Repeat input for confirmation                                     //
+        Serial.print("\n"); // newline                                                          //
+        break;                                                                                  //
+      case 99: // if incoming byte is 'c' change camera cycle time (cam_p)                      //
+        cam_p = Serial.parseInt();                                                              //
+        Serial.print("Delay between camera frames is now ");                                    //
+        Serial.print(cam_p);                                                                    //
+        Serial.print("ms\n");                                                                   //
+        break;                                                                                  //
+                                                                                                //
+      case 101: // if incoming bit is 'e' toggle external triggering                            //
+        ext_go = !ext_go;                                                                       //  
+        lastcam = nowt;                                                                         //
+        for(int i =1; i<outs; i++){digitalWrite(outs[i],LOW);}                                  //
+        Serial.print("Ext go is set to "); // Confirm Input                                     //
+        Serial.print(ext_go); // Repeat input for confirmation                                  //
+        Serial.print("\n"); // newline                                                          //
+        break;
+      case 102: // if incoming bit is 'f' reset frequency
+        f = Serial.parseInt(); // parse the bytes into integers
+        p = 1000/f; // recalculate period
+        Serial.print("stimulus is now at "); // Confirm Input
+        Serial.print(f); // Repeat input for confirmation
+        Serial.print("Hz\n"); // newline
+        break;
+        
+      case 105: // if incoming bit is 'i' toggle inverter
+        invert = !invert;
+        Serial.print("Invert is set to "); // Confirm Input
+        Serial.print(invert); // Repeat input for confirmation
+        Serial.print("\n"); // newline
+        break;  
+
+        case 107: // if k is in toggle simultaneous 
+        simul = !simul;
+        if(laser_state == 2){
+          laser_state = 0;
+          for(int i =1; i<outs; i++){digitalWrite(outs[i],LOW);}
+        }
+        else{laser_state = 2;}
+        Serial.print("Simultaneous is set to "); // Confirm Input
+        Serial.print(simul); // Repeat input for confirmation
+        Serial.print("\n"); // newline
+        break;
+        
       case 114: // if the incoming byte is 'r'
         count = 0; // reset the counting variable to 0
         Serial.print("count = 0\n"); // Confirm change
@@ -195,56 +254,15 @@ void loop() {
         Serial.print(stim); // Repeat input for confirmation
         Serial.print("\n"); // newline
         break;
-      case 97: // If incoming byte is 's' the following bytes will be a framenumber
-        arm = (arm +1) % 2;
-        Serial.print("Arm is now "); // Confirm input
-        Serial.print(arm); // Repeat input for confirmation
-        Serial.print("\n"); // newline
-        break;
-      case 83: // If the incoming bit is 'S' then stimulate now
-        train(); // Run a train of stimuli at p intervals
-        Serial.print("STIM!\n"); // communicate sitmulation
-        break;
+      
       case 119: // If the incoming bit is 'w' then turn on/off switcher
         if(laser_state == 1){laser_state = 0;}
         else if(laser_state == 0 ){laser_state = 1;}
         Serial.print("Switcher Toggled\n"); // Issue confirmation
         break;
-      case 102: // if incoming bit is 'f' reset frequency
-        f = Serial.parseInt(); // parse the bytes into integers
-        p = 1000/f; // recalculate period
-        Serial.print("stimulus is now at "); // Confirm Input
-        Serial.print(f); // Repeat input for confirmation
-        Serial.print("Hz\n"); // newline
-        break;
-      case 78: // if incoming bit is 'N' change number of stimuli
-        N =Serial.parseInt(); // Parse incoming integer into N
-        Serial.print("Number of stimuli is now "); // Confirm Input
-        Serial.print(N); // Repeat input for confirmation
-        Serial.print("\n"); // newline
-        break;
-      case 105: // if incoming bit is 'i' toggle inverter
-        invert = !invert;
-        Serial.print("Invert is set to "); // Confirm Input
-        Serial.print(invert); // Repeat input for confirmation
-        Serial.print("\n"); // newline
-        break;
-      case 101: // if incoming bit is 'e' toggle external triggering
-        ext_go = !ext_go;
+      
 
-        lastcam = nowt;
-        Serial.print("Ext go is set to "); // Confirm Input
-        Serial.print(ext_go); // Repeat input for confirmation
-        Serial.print("\n"); // newline
-        break;
-      case 107: // if k is in toggle simultaneous 
-        simul = !simul;
-        if(laser_state == 2){laser_state = 0;}
-        else{laser_state = 2;}
-        Serial.print("Simultaneous is set to "); // Confirm Input
-        Serial.print(simul); // Repeat input for confirmation
-        Serial.print("\n"); // newline
-        break;
+      
       default: // occurs when we encounter and 'unexpected' case
         Serial.print("instructions unclear you gave "); // Indicates no handling of this case
         Serial.print(cmd); // prints out decimal number for future coding
