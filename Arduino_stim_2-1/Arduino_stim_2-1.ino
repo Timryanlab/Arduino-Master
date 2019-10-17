@@ -22,10 +22,10 @@
 // 1.2 Added switcher support as a switch statement AJN 9-29-19
 
 // USer Variables
-int in = 1; // Specify number of inputs used
-int out = 4; //Specify number of outputs used
-int ins[] = {13}; // {Camera, Ext. Shut}
-int outs[] = {7, 2, 3, 4}; // {Stimulate, Laser1, Laser2, ...}
+int in = 2; // Specify number of inputs used
+int out = 5; //Specify number of outputs used
+int ins[] = {13, 12}; // {Camera, Ext. Shut}
+int outs[] = {7, 2, 3, 4,5}; // {Stimulate, Laser1, Laser2, ...}
 int f = 20; // initial frequency of Stimulation in Hz
 int N = 20; // Number of stimuli
 long pwidth = 1; // pulse width in milliseconds
@@ -81,10 +81,10 @@ void loop() {
           case 1: //switcher between laser1 and laser2
             switch(count%2){
               case 0:
-                digitalWrite(outs[3],HIGH);
+                digitalWrite(outs[1],HIGH);
                 break;
               case 1:
-                digitalWrite(outs[1],HIGH);
+                digitalWrite(outs[2],HIGH);
                 break;
             }//end switch las_stat for switcher
           } // end switch laser state
