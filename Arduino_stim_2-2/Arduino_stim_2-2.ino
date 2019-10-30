@@ -202,7 +202,7 @@ void loop() {
         Serial.print("\n"); // newline
         break;
       case 83: // If the incoming bit is 'S' then stimulate now
-        train(); // Run a train of stimuli at p intervals
+        flag = 1; // Run a train of stimuli at p intervals
         Serial.print("STIM!\n"); // communicate sitmulation
         break;
       case 119: // If the incoming bit is 'w' then turn on/off switcher
