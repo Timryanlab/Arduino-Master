@@ -73,7 +73,6 @@ void loop() {
   int cmd = 0; // Command variable for updating arduino state through USB
   cam = digitalRead(ins[0]); // Read camera state for this frame
   if(cam0 != cam) { // If camera state has changed execute following
-    cmd = count + 5;
     switch(cam){ // Switch between high and low states
       case HIGH: // Indicates Frame is being read
         if(digitalRead(ins[1]) == HIGH || in == 1){ // If either 1 input or the external shutter is open
@@ -85,20 +84,20 @@ void loop() {
           case 1: //switcher between laser1 and laser2
             switch(count%2){
               case 0:
-                digitalWrite(outs[3],HIGH);
+                digitalWrite(outs[1],HIGH);
                 break;
               case 1:
-                digitalWrite(outs[1],HIGH);
+                digitalWrite(outs[2],HIGH);
                 break;
             }//end switch las_stat for switcher
           } // end switch laser state
         
-        count++; // increment counting variable
-        if(count == stim){
-          if(arm == 1){flag = 1;}
+          count++; // increment counting variable
+          if(count == stim){
+            if(arm == 1){flag = 1;}
           }
-        Serial.print(count); // print camera frame
-        Serial.print("\n"); // newline character
+          Serial.print(count); // print camera frame
+          Serial.print("\n"); // newline character
         }
         break; // Don't execute any more of the switch loop
     
@@ -153,7 +152,7 @@ void loop() {
         Serial.print("\n"); // newline
         break;
       case 83: // If the incoming bit is 'S' then stimulate now
-        train(); // Run a train of stimuli at p intervals
+        flag = 1; // Run a train of stimuli at p intervals
         Serial.print("STIM!\n"); // communicate sitmulation
         break;
       case 52: // If the incoming bit is 'S' then stimulate now
@@ -181,7 +180,7 @@ void loop() {
         break;
       case 78: // if incoming bit is 'N' change number of stimuli
         N =Serial.parseInt(); // Parse incoming integer into N
-        Serial.print("Number of stimuli is not "); // Confirm Input
+        Serial.print("Number of stimuli is now "); // Confirm Input
         Serial.print(N); // Repeat input for confirmation
         Serial.print("\n"); // newline
         break;
