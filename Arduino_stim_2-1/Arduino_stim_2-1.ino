@@ -24,10 +24,12 @@
 // USer Variables
 int in = 1; // Specify number of inputs used
 int out = 4; //Specify number of outputs used
-int ins[] = {13, 12}; // {Camera, Ext. Shut}
+int ins[] = {13}; // {Camera, Ext. Shut}
+int shut = 12;
 int outs[] = {7, 2, 3, 4}; // {Stimulate, Laser1, Laser2, ...}
 int f = 1; // initial frequency of Stimulation in Hz
 int N = 10; // Number of stimuli
+int l405 = 0;
 long pwidth = 1; // pulse width in milliseconds
 
 // Initialization of user independent variables.
@@ -54,7 +56,8 @@ void setup() {
     pinMode(outs[i],OUTPUT);
     digitalWrite(outs[i], LOW); // initialize outputs to low
   }
-
+  pinMode(shut,OUTPUT);
+  digitalWrite(shut,LOW);
   // This section is for USB communication early on and will be streamlined after debugging 8-29-19
   Serial.begin(9600);
   Serial.setTimeout(100); // we won't be communicating that much, 100 ms should be fine
@@ -152,6 +155,17 @@ void loop() {
       case 83: // If the incoming bit is 'S' then stimulate now
         train(); // Run a train of stimuli at p intervals
         Serial.print("STIM!\n"); // communicate sitmulation
+        break;
+      case 52: // If the incoming bit is 'S' then stimulate now
+        l405 = (l405+1)%2;
+        if(l405 == 1){
+          digitalWrite(shut,HIGH);
+          Serial.print("405 ON\n");
+          }
+        if(l405 == 0){
+          digitalWrite(shut,LOW);
+          Serial.print("405 OFF\n");
+        }
         break;
       case 119: // If the incoming bit is 'w' then turn on/off switcher
         if(laser_state == 1){laser_state = 0;}
